@@ -5,7 +5,6 @@ import shutil
 import uuid
 from collections.abc import Mapping
 from pathlib import Path, PurePosixPath
-from typing import TypeAlias
 
 from .canonical_json import canonical_json_bytes, sha256_bytes
 from .errors import InvalidArtifactPathError, RevisionConflictError
@@ -14,7 +13,7 @@ from .locking import ProjectLock
 from .layout import ProjectLayout
 from .models import ArtifactRef, ProjectEvent, ProjectState, TransactionJournal
 
-MutationValue: TypeAlias = str | bytes | None
+type MutationValue = str | bytes | None
 
 
 class ProjectSnapshot:
