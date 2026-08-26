@@ -87,13 +87,14 @@ testpaths = ["tests", "apodex/tests"]
 # ``apodex`` remains as a compatibility alias for existing users.
 frontier-agent = "apodex.cli:main"
 apodex = "apodex.cli:main"
+frontier-vsi = "frontier_vsi.cli:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["frontier_agent", "apodex", "plugins", "workflows", "benchmarks"]
+packages = ["frontier_agent", "frontier_vsi", "apodex", "plugins", "workflows", "benchmarks"]
 
 # PEP 561 marker, shipped for frontier_agent only. That package is the framework
 # surface downstream code imports, and it is pyright-clean. The marker is a
@@ -182,5 +183,5 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = [
-    "frontier_agent", "apodex", "plugins", "workflows", "benchmarks",
+    "frontier_agent", "frontier_vsi", "apodex", "plugins", "workflows", "benchmarks",
 ]

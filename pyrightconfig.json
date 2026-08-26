@@ -5,6 +5,7 @@
   // thing for everyone.
   "include": [
     "frontier_agent",
+    "frontier_vsi",
     "apodex",
     "workflows",
     "plugins",
