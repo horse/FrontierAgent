@@ -190,8 +190,10 @@ class ControlChapterCoordinator:
             dependency_paths = (
                 f"{root}/DRAFT.md",
                 f"{root}/CLAIMS.jsonl",
-                "constitution/STYLE_LOCK.md",
                 "architecture/CHAPTER_FUNCTION_MAP.yaml",
+                "constitution/STYLE_PROFILE.yaml",
+                "constitution/VOICE_SPEC.md",
+                "gates/STYLE_LOCKED.json",
             )
             refs = [
                 review_snapshot.artifacts[path]
@@ -202,7 +204,6 @@ class ControlChapterCoordinator:
                 {
                     "gate": "CONTROL_CHAPTER_PASS",
                     "status": "PASS",
-                    "chapter_id": chapter_id,
                     "dependency_paths": [ref.path for ref in refs],
                     "input_fingerprint": dependency_fingerprint(refs),
                     "approved_by": "editor",
