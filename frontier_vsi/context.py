@@ -41,7 +41,9 @@ class ContextPack:
             lines.append(f"chapter: {self.chapter_id}")
         for path in sorted(self.artifacts):
             item = self.artifacts[path]
-            lines.append(f"\n## Artifact: {path}\nsha256: {item.sha256}\n\n{item.content.rstrip()}")
+            lines.append(
+                f"\n## Artifact: {path}\nsha256: {item.sha256}\n\n{item.content.rstrip()}"
+            )
         return "\n".join(lines) + "\n"
 
 
@@ -51,10 +53,24 @@ _BASE = (
 )
 _ROLE_PATHS: dict[str, tuple[str, ...]] = {
     "editor": (*_BASE, "architecture/MASTER_ARGUMENT.md", "architecture/OUTLINE.md"),
-    "research_director": (*_BASE, "research/RESEARCH_PLAN.md", "architecture/PROVISIONAL_OUTLINE.md"),
+    "research_director": (
+        *_BASE,
+        "research/RESEARCH_PLAN.md",
+        "architecture/PROVISIONAL_OUTLINE.md",
+    ),
     "researcher": (*_BASE, "research/RESEARCH_PLAN.md", "research/SOURCE_POLICY.md"),
-    "curator": (*_BASE, "research/RESEARCH_PLAN.md", "research/CONTRADICTIONS.md", "research/RESEARCH_GAPS.md"),
-    "architect": (*_BASE, "research/RESEARCH_SYNTHESIS.md", "research/CONTRADICTIONS.md", "research/RESEARCH_GAPS.md"),
+    "curator": (
+        *_BASE,
+        "research/RESEARCH_PLAN.md",
+        "research/CONTRADICTIONS.md",
+        "research/RESEARCH_GAPS.md",
+    ),
+    "architect": (
+        *_BASE,
+        "research/RESEARCH_SYNTHESIS.md",
+        "research/CONTRADICTIONS.md",
+        "research/RESEARCH_GAPS.md",
+    ),
     "author": (
         *_BASE,
         "constitution/STYLE_PROFILE.yaml",
@@ -66,10 +82,21 @@ _ROLE_PATHS: dict[str, tuple[str, ...]] = {
     ),
     "claim_extractor": (*_BASE, "architecture/MASTER_ARGUMENT.md"),
     "fact_reviewer": (*_BASE, "research/RESEARCH_SYNTHESIS.md"),
-    "structural_reviewer": (*_BASE, "architecture/MASTER_ARGUMENT.md", "architecture/OUTLINE.md"),
-    "authorial_reviewer": (*_BASE, "constitution/STYLE_PROFILE.yaml", "constitution/VOICE_SPEC.md"),
+    "structural_reviewer": (
+        *_BASE,
+        "architecture/MASTER_ARGUMENT.md",
+        "architecture/OUTLINE.md",
+    ),
+    "authorial_reviewer": (
+        *_BASE,
+        "constitution/STYLE_PROFILE.yaml",
+        "constitution/VOICE_SPEC.md",
+    ),
     "public_reader_reviewer": ("constitution/BOOK_CHARTER.md",),
-    "blind_reviewer": ("constitution/BOOK_CHARTER.md", "publication/PUBLICATION_RUBRIC.md"),
+    "blind_reviewer": (
+        "constitution/BOOK_CHARTER.md",
+        "publication/PUBLICATION_RUBRIC.md",
+    ),
 }
 _CHAPTER_ROLES = {
     "author",
@@ -87,10 +114,11 @@ def build_context_pack(
     role_id: str,
     chapter_id: str | None = None,
     extra_paths: tuple[str, ...] = (),
+    book_level: bool = False,
 ) -> ContextPack:
     if role_id not in _ROLE_PATHS:
         raise ContextBuildError(f"unknown FrontierVSI role: {role_id}")
-    if role_id in _CHAPTER_ROLES and not chapter_id:
+    if role_id in _CHAPTER_ROLES and not chapter_id and not book_level:
         raise ContextBuildError(f"chapter_id is required for role {role_id}")
 
     paths = list(_ROLE_PATHS[role_id])
@@ -116,7 +144,11 @@ def build_context_pack(
         artifacts[path] = ContextArtifact(path=path, sha256=ref.sha256, content=content)
 
     if role_id == "author" and chapter_id:
-        for required in (f"chapters/{chapter_id}/BRIEF.md", f"chapters/{chapter_id}/EVIDENCE_PACKET.md"):
+        required_paths = (
+            f"chapters/{chapter_id}/BRIEF.md",
+            f"chapters/{chapter_id}/EVIDENCE_PACKET.md",
+        )
+        for required in required_paths:
             if required not in artifacts:
                 raise ContextBuildError(f"required author context artifact missing: {required}")
 
@@ -127,7 +159,10 @@ def build_context_pack(
         "role_id": role_id,
         "chapter_id": chapter_id,
         "method_bundle_hash": method.bundle_hash,
-        "artifacts": [{"path": p, "sha256": artifacts[p].sha256} for p in sorted(artifacts)],
+        "artifacts": [
+            {"path": path, "sha256": artifacts[path].sha256}
+            for path in sorted(artifacts)
+        ],
     }
     return ContextPack(
         project_id=snapshot.state.project_id,
