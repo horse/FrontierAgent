@@ -1,0 +1,38 @@
+name: FrontierVSI CI
+on:
+  push:
+    branches: [main, "m*/**"]
+    paths:
+      - "frontier_vsi/**"
+      - "workflows/vsi_editorial/**"
+      - "tests/frontier_vsi/**"
+      - ".github/workflows/frontiervsi-ci.yml"
+      - "pyproject.toml"
+      - "pyrightconfig.json"
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontier_vsi/**"
+      - "workflows/vsi_editorial/**"
+      - "tests/frontier_vsi/**"
+      - ".github/workflows/frontiervsi-ci.yml"
+      - "pyproject.toml"
+      - "pyrightconfig.json"
+permissions:
+  contents: read
+jobs:
+  frontiervsi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --extra dev
+      - name: Ruff
+        run: uv run ruff check frontier_vsi/ workflows/vsi_editorial/ tests/frontier_vsi/ || uv run ruff check frontier_vsi/ tests/frontier_vsi/
+      - name: Pyright
+        run: uv run pyright
+      - name: FrontierVSI tests
+        run: uv run pytest -q tests/frontier_vsi
