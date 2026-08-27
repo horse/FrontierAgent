@@ -126,3 +126,33 @@ def load_issue(store: ProjectStore, issue_id: str) -> IssueRecord:
     return IssueRecord.model_validate_json(
         store.snapshot().read_text(f"issues/{issue_id}.json")
     )
+
+
+def iter_issues(store: ProjectStore, *, scope: str | None = None) -> tuple[IssueRecord, ...]:
+    records: list[IssueRecord] = []
+    snapshot = store.snapshot()
+    for path in sorted(snapshot.artifacts):
+        if not path.startswith("issues/ISS-") or not path.endswith(".json"):
+            continue
+        record = IssueRecord.model_validate_json(snapshot.read_text(path))
+        if scope is None or record.scope == scope:
+            records.append(record)
+    return tuple(records)
+
+
+def resolve_open_issues(store: ProjectStore, *, scope: str) -> int:
+    snapshot = store.snapshot()
+    mutations: dict[str, str] = {}
+    for record in iter_issues(store, scope=scope):
+        if record.status not in {"RESOLVED", "VERIFIED", "REJECTED"}:
+            updated = record.model_copy(update={"status": "RESOLVED"})
+            mutations[f"issues/{record.issue_id}.json"] = updated.model_dump_json(indent=2) + "\n"
+    if not mutations:
+        return snapshot.state.project_revision
+    state = store.commit(
+        expected_revision=snapshot.state.project_revision,
+        mutations=mutations,
+        actor="editor",
+        reason=f"resolve superseded editorial issues for {scope}",
+    )
+    return state.project_revision
