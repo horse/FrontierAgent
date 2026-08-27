@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import json
 import re
-from typing import TypeVar
 
 from pydantic import BaseModel
 
-T = TypeVar("T", bound=BaseModel)
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL | re.IGNORECASE)
 
 
-def parse_structured_output(text: str, model_type: type[T]) -> T:
+def parse_structured_output[T: BaseModel](text: str, model_type: type[T]) -> T:
     stripped = text.strip()
     match = _FENCE.fullmatch(stripped)
     if match:

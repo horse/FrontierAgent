@@ -125,7 +125,11 @@ def build_context_pack(
     if chapter_id:
         chapter_root = f"chapters/{chapter_id}"
         if role_id == "author":
-            paths += [f"{chapter_root}/BRIEF.md", f"{chapter_root}/EVIDENCE_PACKET.md"]
+            paths += [
+                f"{chapter_root}/BRIEF.md",
+                f"{chapter_root}/EVIDENCE_PACKET.md",
+                f"{chapter_root}/REVISION_DIRECTIVE.md",
+            ]
         elif role_id == "claim_extractor":
             paths += [f"{chapter_root}/DRAFT.md"]
         else:

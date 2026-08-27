@@ -7,8 +7,8 @@ from .agent_runtime import AgentRequest, AgentRunner
 from .context import build_context_pack
 from .editorial_models import ReviewPacket
 from .gates import dependency_fingerprint
-from .structured import parse_structured_output
 from .store import ProjectStore
+from .structured import parse_structured_output
 
 _SAMPLE_KINDS = ("opening", "core_explanation", "high_risk")
 _REVIEW_CONTRACT = "Return one JSON object: pass_gate boolean, score 0-100, issues[]."

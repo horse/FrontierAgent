@@ -9,8 +9,8 @@ from pathlib import Path, PurePosixPath
 from .canonical_json import canonical_json_bytes, sha256_bytes
 from .errors import InvalidArtifactPathError, RevisionConflictError
 from .events import append_event, iter_events
-from .locking import ProjectLock
 from .layout import ProjectLayout
+from .locking import ProjectLock
 from .models import ArtifactRef, ProjectEvent, ProjectState, TransactionJournal
 
 type MutationValue = str | bytes | None
