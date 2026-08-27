@@ -1,0 +1,33 @@
+name: FrontierVSI Safe Autofix
+on:
+  push:
+    branches: ["m7/openclaw-interface"]
+    paths:
+      - ".github/workflows/frontiervsi-autofix.yml"
+permissions:
+  contents: write
+jobs:
+  safe-autofix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m7/openclaw-interface
+      - uses: astral-sh/setup-uv@v4
+        with:
+          python-version: "3.12"
+      - run: uv sync --locked --extra dev
+      - name: Apply Ruff safe fixes only
+        run: uv run ruff check --fix --exit-zero frontier_vsi/ tests/frontier_vsi/
+      - name: Commit safe fixes
+        run: |
+          if git diff --quiet; then
+            echo "No safe fixes available"
+            exit 0
+          fi
+          git config user.name "frontiervsi-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontier_vsi tests/frontier_vsi
+          git commit -m "chore: apply Ruff safe fixes"
+          git push origin HEAD:m7/openclaw-interface
