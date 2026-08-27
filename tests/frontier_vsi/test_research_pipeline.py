@@ -1,4 +1,5 @@
 import asyncio
+import json
 from pathlib import Path
 
 from frontier_vsi.agent_runtime import AgentRequest, AgentResponse
@@ -17,7 +18,20 @@ class FakeRunner:
             content = '{"focus":"core","tasks":[{"task_id":"T1","question":"q1","objective":"o1"},{"task_id":"T2","question":"q2","objective":"o2"}],"stop_conditions":["counterexample checked"]}'
         elif request.role_id == "researcher":
             task_id = "T1" if "T1" in request.instruction else "T2"
-            content = '{"task_id":"%s","question":"q","findings":[],"counterevidence":[],"disagreements":[],"uncertainties":[],"recommended_claims":[],"do_not_claim":[],"followup_questions":[],"source_candidates":[]}' % task_id
+            content = json.dumps(
+                {
+                    "task_id": task_id,
+                    "question": "q",
+                    "findings": [],
+                    "counterevidence": [],
+                    "disagreements": [],
+                    "uncertainties": [],
+                    "recommended_claims": [],
+                    "do_not_claim": [],
+                    "followup_questions": [],
+                    "source_candidates": [],
+                }
+            )
         else:
             content = '{"sources":[],"evidence":[],"claims":[],"contradictions":[],"research_gaps":[],"synthesis":"Nothing yet."}'
         return AgentResponse(role_id=request.role_id, final_content=content)
@@ -29,8 +43,12 @@ def test_research_pipeline_fans_out_then_curates(tmp_path: Path) -> None:
     store = ProjectStore(root)
     store.commit(
         expected_revision=0,
-        mutations={"constitution/BOOK_CHARTER.md":"# Charter\n","constitution/AUTHORIAL_CONSTITUTION.md":"# Position\n"},
-        actor="test", reason="seed",
+        mutations={
+            "constitution/BOOK_CHARTER.md": "# Charter\n",
+            "constitution/AUTHORIAL_CONSTITUTION.md": "# Position\n",
+        },
+        actor="test",
+        reason="seed",
     )
     runner = FakeRunner()
     result = asyncio.run(ResearchCoordinator(runner, max_parallel=2).run(store, focus="core"))
