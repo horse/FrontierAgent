@@ -253,10 +253,13 @@ def test_cli_same_request_id_different_command_fails_closed(tmp_path, capsys):
     )
     capsys.readouterr()
     common = ["ingest", "--book", str(book), "--request-id", "same", "--json"]
-    assert cli_run(common + ["--path", "samples/a.md", "--file", str(first_source)]) == EXIT_OK
+    assert (
+        cli_run([*common, "--path", "samples/a.md", "--file", str(first_source)])
+        == EXIT_OK
+    )
     capsys.readouterr()
     assert (
-        cli_run(common + ["--path", "samples/b.md", "--file", str(second_source)])
+        cli_run([*common, "--path", "samples/b.md", "--file", str(second_source)])
         == EXIT_CONFLICT
     )
 
