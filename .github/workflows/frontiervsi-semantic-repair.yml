@@ -1,0 +1,147 @@
+name: FrontierVSI One-shot Semantic Repair
+on:
+  push:
+    branches: ["m7/openclaw-interface"]
+    paths:
+      - ".github/workflows/frontiervsi-semantic-repair.yml"
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: m7/openclaw-interface
+      - name: Apply reviewed semantic lint repairs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str, count: int = -1) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"expected pattern not found in {path}: {old[:80]!r}")
+              p.write_text(text.replace(old, new, count))
+
+          # Bind per-cycle values as defaults so async review closures cannot
+          # observe values from a later ChapterCoordinator loop iteration.
+          replace(
+              "frontier_vsi/chapter_pipeline.py",
+              '            async def ordinary_review(role_id: str) -> tuple[str, ReviewPacket]:\n',
+              '            async def ordinary_review(\n'
+              '                role_id: str,\n'
+              '                review_snapshot_bound: ProjectSnapshot = review_snapshot,\n'
+              '                project_id_bound: str = state.project_id,\n'
+              '                cycle_bound: int = cycle,\n'
+              '            ) -> tuple[str, ReviewPacket]:\n',
+              1,
+          )
+          replace(
+              "frontier_vsi/chapter_pipeline.py",
+              '                    review_snapshot, role_id=role_id, chapter_id=chapter_id\n',
+              '                    review_snapshot_bound, role_id=role_id, chapter_id=chapter_id\n',
+              1,
+          )
+          replace(
+              "frontier_vsi/chapter_pipeline.py",
+              '                            f"{state.project_id}:chapter:{chapter_id}:{role_id}:{cycle}"\n',
+              '                            f"{project_id_bound}:chapter:{chapter_id}:{role_id}:{cycle_bound}"\n',
+              1,
+          )
+          replace(
+              "frontier_vsi/chapter_pipeline.py",
+              '            async def authorial_review() -> tuple[str, AuthorialReview]:\n',
+              '            async def authorial_review(\n'
+              '                review_snapshot_bound: ProjectSnapshot = review_snapshot,\n'
+              '                project_id_bound: str = state.project_id,\n'
+              '                cycle_bound: int = cycle,\n'
+              '            ) -> tuple[str, AuthorialReview]:\n',
+              1,
+          )
+          replace(
+              "frontier_vsi/chapter_pipeline.py",
+              '                    review_snapshot,\n                    role_id="authorial_reviewer",\n',
+              '                    review_snapshot_bound,\n                    role_id="authorial_reviewer",\n',
+              1,
+          )
+          replace(
+              "frontier_vsi/chapter_pipeline.py",
+              '                            f"{state.project_id}:chapter:{chapter_id}:authorial_reviewer:{cycle}"\n',
+              '                            f"{project_id_bound}:chapter:{chapter_id}:authorial_reviewer:{cycle_bound}"\n',
+              1,
+          )
+
+          # Research task type is part of the plan contract.
+          p = Path("frontier_vsi/research.py")
+          text = p.read_text()
+          text = text.replace(
+              'from .research_models import CuratedResearch, ResearchPlan, ResearchReport, parse_structured_output\n',
+              'from .research_models import (\n'
+              '    CuratedResearch,\n'
+              '    ResearchPlan,\n'
+              '    ResearchReport,\n'
+              '    ResearchTask,\n'
+              '    parse_structured_output,\n'
+              ')\n',
+          )
+          if 'async def run_task(task) -> ResearchReport:' not in text:
+              raise SystemExit("research.py task signature pattern missing")
+          text = text.replace(
+              'async def run_task(task) -> ResearchReport:',
+              'async def run_task(task: ResearchTask) -> ResearchReport:',
+              1,
+          )
+          p.write_text(text)
+
+          # Explicit return type and non-exceptional numeric-ID parsing.
+          p = Path("frontier_vsi/research_commit.py")
+          text = p.read_text()
+          text = text.replace(
+              'import json\nfrom typing import Any\n',
+              'import json\nfrom contextlib import suppress\nfrom typing import Any\n',
+              1,
+          )
+          text = text.replace(
+              'from .research_models import CuratedResearch\nfrom .store import ProjectStore\n',
+              'from .models import ProjectState\nfrom .research_models import CuratedResearch\nfrom .store import ProjectStore\n',
+              1,
+          )
+          old = '''        if value.startswith(prefix + "-"):\n            try:\n                values.append(int(value.split("-")[-1]))\n            except ValueError:\n                pass\n'''
+          new = '''        if value.startswith(prefix + "-"):\n            with suppress(ValueError):\n                values.append(int(value.split("-")[-1]))\n'''
+          if old not in text:
+              raise SystemExit("research_commit.py ID parser pattern missing")
+          text = text.replace(old, new, 1)
+          text = text.replace(
+              '    actor: str,\n):\n',
+              '    actor: str,\n) -> ProjectState:\n',
+              1,
+          )
+          p.write_text(text)
+
+          # Python 3.12 PEP 695 generic syntax, matching project minimum Python.
+          for path in ("frontier_vsi/research_models.py", "frontier_vsi/structured.py"):
+              p = Path(path)
+              text = p.read_text()
+              text = text.replace('from typing import TypeVar\n\n', '')
+              text = text.replace('T = TypeVar("T", bound=BaseModel)\n', '')
+              text = text.replace(
+                  'def parse_structured_output(text: str, model_type: type[T]) -> T:',
+                  'def parse_structured_output[T: BaseModel](text: str, model_type: type[T]) -> T:',
+                  1,
+              )
+              p.write_text(text)
+          PY
+      - name: Format repaired files
+        run: |
+          python -m pip install ruff==0.16.4
+          ruff check --fix frontier_vsi/chapter_pipeline.py frontier_vsi/research.py frontier_vsi/research_commit.py frontier_vsi/research_models.py frontier_vsi/structured.py
+      - name: Commit reviewed repair
+        run: |
+          git config user.name "frontiervsi-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add frontier_vsi
+          git commit -m "fix: resolve FrontierVSI semantic lint findings"
+          git push origin HEAD:m7/openclaw-interface
