@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+from contextlib import suppress
 from typing import Any
 
+from .models import ProjectState
 from .research_models import CuratedResearch
 from .store import ProjectStore
 
@@ -21,10 +23,8 @@ def _next(prefix: str, existing: list[dict[str, Any]], key: str) -> int:
     for row in existing:
         value = str(row.get(key, ""))
         if value.startswith(prefix + "-"):
-            try:
+            with suppress(ValueError):
                 values.append(int(value.split("-")[-1]))
-            except ValueError:
-                pass
     return max(values, default=0) + 1
 
 
@@ -38,7 +38,7 @@ def commit_curated_research(
     *,
     expected_revision: int,
     actor: str,
-):
+) -> ProjectState:
     existing_sources = _existing_lines(store, "research/SOURCE_REGISTRY.jsonl")
     existing_evidence = _existing_lines(store, "research/EVIDENCE_LEDGER.jsonl")
     existing_claims = _existing_lines(store, "research/CLAIM_LEDGER.jsonl")

@@ -216,9 +216,14 @@ class ChapterCoordinator:
 
             review_snapshot = store.snapshot()
 
-            async def ordinary_review(role_id: str) -> tuple[str, ReviewPacket]:
+            async def ordinary_review(
+                role_id: str,
+                review_snapshot_bound: ProjectSnapshot = review_snapshot,
+                project_id_bound: str = state.project_id,
+                cycle_bound: int = cycle,
+            ) -> tuple[str, ReviewPacket]:
                 pack = build_context_pack(
-                    review_snapshot, role_id=role_id, chapter_id=chapter_id
+                    review_snapshot_bound, role_id=role_id, chapter_id=chapter_id
                 )
                 response = await self.runner.run(
                     AgentRequest(
@@ -229,7 +234,7 @@ class ChapterCoordinator:
                         ),
                         context_markdown=pack.render_markdown(),
                         task_id=(
-                            f"{state.project_id}:chapter:{chapter_id}:{role_id}:{cycle}"
+                            f"{project_id_bound}:chapter:{chapter_id}:{role_id}:{cycle_bound}"
                         ),
                         output_contract=_REVIEW_CONTRACT,
                     )
@@ -238,9 +243,13 @@ class ChapterCoordinator:
                     response.final_content, ReviewPacket
                 )
 
-            async def authorial_review() -> tuple[str, AuthorialReview]:
+            async def authorial_review(
+                review_snapshot_bound: ProjectSnapshot = review_snapshot,
+                project_id_bound: str = state.project_id,
+                cycle_bound: int = cycle,
+            ) -> tuple[str, AuthorialReview]:
                 pack = build_context_pack(
-                    review_snapshot,
+                    review_snapshot_bound,
                     role_id="authorial_reviewer",
                     chapter_id=chapter_id,
                 )
@@ -252,7 +261,7 @@ class ChapterCoordinator:
                         ),
                         context_markdown=pack.render_markdown(),
                         task_id=(
-                            f"{state.project_id}:chapter:{chapter_id}:authorial_reviewer:{cycle}"
+                            f"{project_id_bound}:chapter:{chapter_id}:authorial_reviewer:{cycle_bound}"
                         ),
                         output_contract=_AUTHORIAL_CONTRACT,
                     )

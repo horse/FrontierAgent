@@ -7,7 +7,13 @@ from dataclasses import dataclass
 from .agent_runtime import AgentRequest, AgentRunner
 from .context import build_context_pack
 from .research_commit import commit_curated_research
-from .research_models import CuratedResearch, ResearchPlan, ResearchReport, parse_structured_output
+from .research_models import (
+    CuratedResearch,
+    ResearchPlan,
+    ResearchReport,
+    ResearchTask,
+    parse_structured_output,
+)
 from .store import ProjectStore
 
 _PLAN_CONTRACT = "Return exactly one JSON object matching ResearchPlan: focus, tasks[{task_id,question,objective,search_terms,required_source_types,counterexample_target}], stop_conditions."
@@ -52,7 +58,7 @@ class ResearchCoordinator:
 
         semaphore = asyncio.Semaphore(self.max_parallel)
 
-        async def run_task(task) -> ResearchReport:
+        async def run_task(task: ResearchTask) -> ResearchReport:
             async with semaphore:
                 pack = build_context_pack(store.snapshot(), role_id="researcher")
                 response = await self.runner.run(
