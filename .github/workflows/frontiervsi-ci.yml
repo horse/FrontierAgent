@@ -31,6 +31,6 @@ jobs:
       - name: Ruff
         run: uv run ruff check frontier_vsi/ tests/frontier_vsi/
       - name: Pyright
-        run: uv run pyright
+        run: uv run pyright frontier_vsi
       - name: FrontierVSI tests
         run: uv run pytest -q tests/frontier_vsi
