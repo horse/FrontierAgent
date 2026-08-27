@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import json
 import os
 import re
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
@@ -58,7 +57,7 @@ class RunTracker:
         runtime_info: RuntimeInfo | None = None,
     ) -> RunTracker:
         snapshot = store.snapshot()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         run_id = f"{now.strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:12]}"
         run_dir = store.layout.runs_dir / run_id
         method = load_method_bundle()
@@ -102,7 +101,7 @@ class RunTracker:
         _append_jsonl(
             self.run_dir / "progress.jsonl",
             {
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "event": event,
                 "data": data or {},
             },
@@ -187,7 +186,7 @@ class RunTracker:
         self.manifest = self.manifest.model_copy(
             update={
                 "status": "SUCCEEDED",
-                "finished_at": datetime.now(timezone.utc),
+                "finished_at": datetime.now(UTC),
                 "committed_artifact_refs": changed,
                 "project_revision_after_commit": snapshot.state.project_revision,
             }
@@ -202,7 +201,7 @@ class RunTracker:
         self.manifest = self.manifest.model_copy(
             update={
                 "status": "FAILED",
-                "finished_at": datetime.now(timezone.utc),
+                "finished_at": datetime.now(UTC),
                 "error_class": type(exc).__name__,
                 "error_message": str(exc),
             }

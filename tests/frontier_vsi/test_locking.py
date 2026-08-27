@@ -27,9 +27,8 @@ def test_project_lock_fails_closed_under_contention(tmp_path: Path) -> None:
     assert ready.get(timeout=3) is True
 
     try:
-        with pytest.raises(ProjectLockedError):
-            with ProjectLock(root, timeout_s=0.1):
-                raise AssertionError("contended lock must not be acquired")
+        with pytest.raises(ProjectLockedError), ProjectLock(root, timeout_s=0.1):
+            raise AssertionError("contended lock must not be acquired")
     finally:
         release.put(True)
         process.join(timeout=3)

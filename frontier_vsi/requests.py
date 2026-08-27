@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .canonical_json import canonical_json_bytes, sha256_bytes
@@ -101,7 +101,7 @@ def complete_request(
                 "status": RequestStatus.COMPLETED,
                 "result": result,
                 "error": None,
-                "completed_at": datetime.now(timezone.utc),
+                "completed_at": datetime.now(UTC),
             }
         )
         _write_atomic(path, completed)
@@ -129,7 +129,7 @@ def fail_request(
                 "status": RequestStatus.FAILED,
                 "result": None,
                 "error": error,
-                "completed_at": datetime.now(timezone.utc),
+                "completed_at": datetime.now(UTC),
             }
         )
         _write_atomic(path, failed)

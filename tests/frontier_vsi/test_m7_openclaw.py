@@ -1,10 +1,10 @@
 import json
-from pathlib import Path
 
 import pytest
 
 from frontier_vsi.agent_runtime import AgentRequest, AgentResponse
-from frontier_vsi.cli import EXIT_CONFLICT, EXIT_OK, run as cli_run
+from frontier_vsi.cli import EXIT_CONFLICT, EXIT_OK
+from frontier_vsi.cli import run as cli_run
 from frontier_vsi.commission import CommissionCoordinator
 from frontier_vsi.decisions import decide_issue
 from frontier_vsi.issues import IssueRecord

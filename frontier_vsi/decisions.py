@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import PurePosixPath
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -25,7 +24,7 @@ class DecisionRecord(BaseModel):
     disposition: str = Field(min_length=1)
     rationale: str = Field(min_length=1)
     decided_by: str = Field(min_length=1)
-    decided_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    decided_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 def _next_decision_number(store: ProjectStore) -> int:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -24,7 +24,7 @@ class ProjectState(BaseModel):
     current_snapshot: str = "r00000000-initial"
     artifacts: dict[str, ArtifactRef] = Field(default_factory=dict)
     last_commit_id: str | None = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ProjectEvent(BaseModel):
@@ -38,7 +38,7 @@ class ProjectEvent(BaseModel):
     new_revision: int = Field(ge=1)
     actor: str = Field(min_length=1)
     reason: str = Field(min_length=1)
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class GateStatus(StrEnum):
@@ -74,7 +74,7 @@ class RequestRecord(BaseModel):
     status: RequestStatus = RequestStatus.CLAIMED
     result: dict[str, object] | None = None
     error: str | None = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     completed_at: datetime | None = None
 
 
@@ -95,7 +95,7 @@ class RunManifest(BaseModel):
     context_pack_hashes: dict[str, str] = Field(default_factory=dict)
     input_artifact_refs: list[str] = Field(default_factory=list)
     status: str = "RUNNING"
-    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     finished_at: datetime | None = None
     candidate_output_refs: list[str] = Field(default_factory=list)
     committed_artifact_refs: list[str] = Field(default_factory=list)

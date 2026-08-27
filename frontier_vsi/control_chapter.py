@@ -9,8 +9,8 @@ from .chapter_materials import build_chapter_materials
 from .context import build_context_pack
 from .editorial_models import AuthorDraft, AuthorialReview, ClaimExtraction, ReviewPacket
 from .gates import dependency_fingerprint
-from .structured import parse_structured_output
 from .store import ProjectStore
+from .structured import parse_structured_output
 
 _AUTHOR_CONTRACT = (
     "Return one JSON object with prose string, "
