@@ -86,9 +86,8 @@ def commit_issues(
         for role, issue in issues
     ]
     if not normalized:
-        return IssueCommitResult(
-            issue_ids=(), project_revision=store.snapshot().state.project_revision
-        )
+        revision = resolve_open_issues(store, scope=scope)
+        return IssueCommitResult(issue_ids=(), project_revision=revision)
     start = _next_issue_number(store)
     mutations: dict[str, str] = {}
     ids: list[str] = []
