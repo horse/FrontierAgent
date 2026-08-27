@@ -32,23 +32,52 @@ def _write_atomic(path: Path, record: RequestRecord) -> None:
     os.replace(temp, path)
 
 
-def claim_request(root: Path | str, request_id: str, command_fingerprint: str) -> RequestRecord:
+def begin_request(
+    root: Path | str,
+    request_id: str,
+    command_fingerprint: str,
+) -> tuple[RequestRecord, bool]:
+    """Claim one idempotent command and return ``(record, is_owner)``.
+
+    ``is_owner`` is true only for the process that created the CLAIMED record.
+    Existing records are returned to callers for replay/conflict handling but
+    never grant a second execution lease.
+    """
+
     path = _request_path(root, request_id)
     with ProjectLock(root):
         if path.exists():
             record = _read(path)
-            if record.request_id != request_id or record.command_fingerprint != command_fingerprint:
+            if (
+                record.request_id != request_id
+                or record.command_fingerprint != command_fingerprint
+            ):
                 raise IdempotencyConflictError(
                     f"request id {request_id!r} already belongs to a different command"
                 )
-            return record
+            return record, False
         record = RequestRecord(
             request_id=request_id,
             command_fingerprint=command_fingerprint,
             status=RequestStatus.CLAIMED,
         )
         _write_atomic(path, record)
-        return record
+        return record, True
+
+
+def claim_request(
+    root: Path | str,
+    request_id: str,
+    command_fingerprint: str,
+) -> RequestRecord:
+    """Backward-compatible request claim API.
+
+    New execution paths should use :func:`begin_request` so they can distinguish
+    the one owner from duplicate callers.
+    """
+
+    record, _is_owner = begin_request(root, request_id, command_fingerprint)
+    return record
 
 
 def complete_request(
@@ -77,6 +106,34 @@ def complete_request(
         )
         _write_atomic(path, completed)
         return completed
+
+
+def fail_request(
+    root: Path | str,
+    request_id: str,
+    command_fingerprint: str,
+    *,
+    error: str,
+) -> RequestRecord:
+    path = _request_path(root, request_id)
+    with ProjectLock(root):
+        if not path.exists():
+            raise RequestNotFoundError(request_id)
+        record = _read(path)
+        if record.command_fingerprint != command_fingerprint:
+            raise IdempotencyConflictError(
+                f"request id {request_id!r} already belongs to a different command"
+            )
+        failed = record.model_copy(
+            update={
+                "status": RequestStatus.FAILED,
+                "result": None,
+                "error": error,
+                "completed_at": datetime.now(timezone.utc),
+            }
+        )
+        _write_atomic(path, failed)
+        return failed
 
 
 def lookup_request(root: Path | str, request_id: str) -> RequestRecord | None:
